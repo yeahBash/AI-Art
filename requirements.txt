@@ -1,0 +1,2 @@
+pip install compel --upgrade
+pip install ipywidgets
