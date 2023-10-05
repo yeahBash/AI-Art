@@ -5,14 +5,15 @@ import ipywidgets as widgets
 # for config
 import json
 from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline
-from diffusers import EulerDiscreteScheduler, DDIMScheduler, LMSDiscreteScheduler
+from diffusers import EulerDiscreteScheduler, DDIMScheduler, LMSDiscreteScheduler, DPMSolverMultistepScheduler
 # config path
 
 BASE_PIPELINES = {"StableDiffusionXLPipeline":StableDiffusionXLPipeline,}
 REFINER_PIPELINES = {"StableDiffusionXLImg2ImgPipeline":StableDiffusionXLImg2ImgPipeline}
 SCHEDULERS = {"EulerDiscreteScheduler":EulerDiscreteScheduler, 
               "DDIMScheduler":DDIMScheduler, 
-              "LMSDiscreteScheduler":LMSDiscreteScheduler}
+              "LMSDiscreteScheduler":LMSDiscreteScheduler,
+              "DPMSolverMultistepScheduler":DPMSolverMultistepScheduler}
 PRECISION = {"torch.float16":torch.float16}
 
 class SDXLConfig:
@@ -77,10 +78,10 @@ class SDXLConfig:
     def from_json(dict: dict):
             return SDXLConfig(**dict)
     def load_config():
-         with open(CONFIG_PATH, "r") as read_file:
+         with open(SDXLConfig.CONFIG_PATH, "r") as read_file:
             return json.load(read_file, object_hook=SDXLConfig.from_json)
     def save_config(self):
-         with open(CONFIG_PATH, "w") as write_file:
+         with open(SDXLConfig.CONFIG_PATH, "w") as write_file:
             json.dump(self, write_file, skipkeys=True, indent=1, default=SDXLConfig.to_json)
 
     def set_ui(self):

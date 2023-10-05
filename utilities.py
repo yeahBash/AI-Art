@@ -35,4 +35,3 @@ def save_results(image, config_path:str):
     now_date = datetime.now().strftime("%m_%d_%Y-%H_%M_%S")
     shutil.copyfile(config_path, f"results\{now_date}.json")
     image.save(f"results\{now_date}.png")
-  
