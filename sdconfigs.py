@@ -1,7 +1,8 @@
 import torch
 # for parameters ui
-from ipywidgets import interact, fixed
+from ipywidgets import interactive_output, fixed, VBox, HBox
 import ipywidgets as widgets
+from IPython.display import display
 # for config
 import json
 from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline
@@ -88,30 +89,38 @@ class SDXLConfig:
         # TODO: not best workaround to get variable name
         def f(x, f_name): setattr(self, f_name.split('=')[0].split('.')[1], x)
 
-        # models, precisions, schedulers
         style = {'description_width': 'initial'}
-        interact(f, x=widgets.Text(value=self.base_pipe_model, placeholder='', description='Base model:', style=style), f_name=fixed(f'{self.base_pipe_model=}'))
-        interact(f, x=widgets.Text(value=self.refiner_pipe_model, placeholder='', description='Refiner model:', style=style), f_name=fixed(f'{self.refiner_pipe_model=}'))
-        interact(f, x=widgets.Dropdown(value=self.torch_dtype_str, options=PRECISION.keys(), description='dtype:', style=style), f_name=fixed(f'{self.torch_dtype_str=}'))
-        interact(f, x=widgets.Text(value=self.variant, placeholder='', description='Variant:', style=style), f_name=fixed(f'{self.variant=}'))
-        interact(f, x=widgets.Checkbox(value=self.use_safetensors, description="Use safetensors", indent=False, style=style), f_name=fixed(f'{self.use_safetensors=}'))
-        interact(f, x=widgets.Dropdown(value=self.base_pipeline_type_str, options=BASE_PIPELINES.keys(), description='Base type:', style=style), f_name=fixed(f'{self.base_pipeline_type_str=}'))
-        interact(f, x=widgets.Dropdown(value=self.refiner_pipeline_type_str, options=REFINER_PIPELINES.keys(), description='Refiner type:', style=style), f_name=fixed(f'{self.refiner_pipeline_type_str=}'))
-        interact(f, x=widgets.Dropdown(value=self.scheduler_type_str, options=SCHEDULERS.keys(), description='Scheduler type:', style=style), f_name=fixed(f'{self.scheduler_type_str=}'))
+        left_box = [
+            # prompts
+            (widgets.Textarea(value=self.prompt, placeholder='Type positive1...', description='Prompt1:', style=style), f'{self.prompt=}'),
+            (widgets.Textarea(value=self.prompt_2, placeholder='Type positive2...', description='Prompt2:', style=style), f'{self.prompt_2=}'),
+            (widgets.Textarea(value=self.negative_prompt, placeholder='Type negative1...', description='Negative Prompt1:', style = style), f'{self.negative_prompt=}'),
+            (widgets.Textarea(value=self.negative_prompt_2, placeholder='Type negative2...', description='Negative Prompt2:', style = style), f'{self.negative_prompt_2=}'),
+            (widgets.Checkbox(value=self.use_compel, description="Use Compel", indent=False, style=style), f'{self.use_compel=}')
+        ]
+        right_box = [
+            # models, precisions, schedulers
+            (widgets.Text(value=self.base_pipe_model, placeholder='', description='Base model:', style=style), f'{self.base_pipe_model=}'),
+            (widgets.Text(value=self.refiner_pipe_model, placeholder='', description='Refiner model:', style=style), f'{self.refiner_pipe_model=}'),
+            (widgets.Dropdown(value=self.torch_dtype_str, options=PRECISION.keys(), description='dtype:', style=style), f'{self.torch_dtype_str=}'),
+            (widgets.Text(value=self.variant, placeholder='', description='Variant:', style=style), f'{self.variant=}'),
+            (widgets.Checkbox(value=self.use_safetensors, description="Use safetensors", indent=False, style=style), f'{self.use_safetensors=}'),
+            (widgets.Dropdown(value=self.base_pipeline_type_str, options=BASE_PIPELINES.keys(), description='Base type:', style=style), f'{self.base_pipeline_type_str=}'),
+            (widgets.Dropdown(value=self.refiner_pipeline_type_str, options=REFINER_PIPELINES.keys(), description='Refiner type:', style=style), f'{self.refiner_pipeline_type_str=}'),
+            (widgets.Dropdown(value=self.scheduler_type_str, options=SCHEDULERS.keys(), description='Scheduler type:', style=style), f'{self.scheduler_type_str=}'),
+            
+            # inference properties
+            (widgets.IntSlider(value=self.num_inference_steps, min=10, max=100, step=5, description="Num inference steps:", continuous_update=False, style=style), f'{self.num_inference_steps=}'),
+            (widgets.IntSlider(value=self.width, min=512, max=1024, step=64, description="Width:", continuous_update=False, style=style),  f'{self.width=}'),
+            (widgets.IntSlider(value=self.height, min=512, max=1024, step=64, description="Height:", continuous_update=False, style=style),  f'{self.height=}'),
+            (widgets.FloatSlider(value=self.guidance_scale, min=0, max=10, step=0.25, description="Guidance scale:", continuous_update=False, style=style), f'{self.guidance_scale=}'),
+            (widgets.IntSlider(value=self.seed, min=0, max=1000000, step=1, description="Seed:", continuous_update=False, style=style), f'{self.seed=}'),
+            (widgets.FloatSlider(value=self.high_noise_frac, min=0, max=1, step=0.05, description="High noise frac:", continuous_update=False, style=style), f'{self.high_noise_frac=}'),
+
+            # refiner
+            (widgets.Checkbox(value=self.use_refiner, description="Use refiner", indent=False, style=style), f'{self.use_refiner=}')
+        ]
         
-        # prompts
-        interact(f, x=widgets.Textarea(value=self.prompt, placeholder='Type positive1...', description='Prompt1:', style=style), f_name=fixed(f'{self.prompt=}'))
-        interact(f, x=widgets.Textarea(value=self.prompt_2, placeholder='Type positive2...', description='Prompt2:', style=style), f_name=fixed(f'{self.prompt_2=}'))
-        interact(f, x=widgets.Textarea(value=self.negative_prompt, placeholder='Type negative1...', description='Negative Prompt1:', style = style), f_name=fixed(f'{self.negative_prompt=}'))
-        interact(f, x=widgets.Textarea(value=self.negative_prompt_2, placeholder='Type negative2...', description='Negative Prompt2:', style = style), f_name=fixed(f'{self.negative_prompt_2=}'))
-        interact(f, x=widgets.Checkbox(value=self.use_compel, description="Use Compel", indent=False, style=style), f_name=fixed(f'{self.use_compel=}'))
-
-        # inference properties
-        interact(f, x=widgets.IntSlider(value=self.num_inference_steps, min=10, max=100, step=5, description="Num inference steps:", continuous_update=False, style=style), f_name=fixed(f'{self.num_inference_steps=}'))
-        interact(f, x=widgets.IntSlider(value=self.width, min=512, max=1024, step=64, description="Width:", continuous_update=False, style=style), f_name=fixed(f'{self.width=}'))
-        interact(f, x=widgets.FloatSlider(value=self.guidance_scale, min=0, max=10, step=0.25, description="Guidance scale:", continuous_update=False, style=style), f_name=fixed(f'{self.guidance_scale=}'))
-        interact(f, x=widgets.IntSlider(value=self.seed, min=0, max=1000000, step=1, description="Seed:", continuous_update=False, style=style), f_name=fixed(f'{self.seed=}'))
-        interact(f, x=widgets.FloatSlider(value=self.high_noise_frac, min=0, max=1, step=0.05, description="High noise frac:", continuous_update=False, style=style), f_name=fixed(f'{self.high_noise_frac=}'))
-
-        # refiner
-        interact(f, x=widgets.Checkbox(value=self.use_refiner, description="Use refiner", indent=False, style=style), f_name=fixed(f'{self.use_refiner=}'))
+        ui = HBox([VBox([tuple[0] for tuple in left_box]), VBox([tuple[0] for tuple in right_box])])
+        [interactive_output(f, {'x':x, 'f_name':fixed(f_name)}) for x,f_name in left_box+right_box]
+        display(ui)
