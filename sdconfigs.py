@@ -116,54 +116,61 @@ class SDXLConfig:
 
     def set_ui(self):
         # TODO: not best workaround to get variable name
-        def f(x, f_name): setattr(self, f_name.split('=')[0].split('.')[1], x)
-        
+        def f(x, name): setattr(self, name, x)
+        def g(f_name): return f_name.split('=')[0].split('.')[1]
+
         def on_base_pipe_dropdown_changed(change): on_base_pipe_changed(change.new)
         def on_base_pipe_changed(value): 
-            right_box[f'{self.width=}'].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
-            right_box[f'{self.height=}'].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
-            right_box[f'{self.strength=}'].disabled = False if value != "StableDiffusionXLPipeline" else True
-            right_box[f'{self.image_path=}'].disabled = False if value != "StableDiffusionXLPipeline" else True
-            right_box[f'{self.mask_path=}'].disabled = False if value == "StableDiffusionXLInpaintPipeline" else True
-        
-        base_pipeline_str_key = f'{self.base_pipeline_type_str=}'
+            right_box[g(f'{self.width=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
+            right_box[g(f'{self.height=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
+            right_box[g(f'{self.strength=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
+            right_box[g(f'{self.image_path=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
+            right_box[g(f'{self.mask_path=}')].disabled = False if value == "StableDiffusionXLInpaintPipeline" else True
+            right_box[g(f'{self.use_refiner=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
+            right_box[g(f'{self.high_noise_frac=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
+            
+            if value != "StableDiffusionXLPipeline":
+                right_box[g(f'{self.use_refiner=}')].value = False
+                right_box[g(f'{self.high_noise_frac=}')].value = 1.0
+            
+        base_pipeline_str_key = g(f'{self.base_pipeline_type_str=}')
         prompts_layout = Layout( width='auto', height='100%')
         items_style = {'description_width': 'initial'}
         items_layout = Layout( width='auto')
         left_box = {
             # prompts
-            f'{self.prompt=}':widgets.Textarea(value=self.prompt, placeholder='Type positive1...', description='Prompt1:', style=items_style, layout=prompts_layout),
-            f'{self.prompt_2=}':widgets.Textarea(value=self.prompt_2, placeholder='Type positive2...', description='Prompt2:', style=items_style, layout=prompts_layout),
-            f'{self.negative_prompt=}':widgets.Textarea(value=self.negative_prompt, placeholder='Type negative1...', description='Negative Prompt1:', style = items_style, layout=prompts_layout),
-            f'{self.negative_prompt_2=}':widgets.Textarea(value=self.negative_prompt_2, placeholder='Type negative2...', description='Negative Prompt2:', style = items_style, layout=prompts_layout),
-            f'{self.use_compel=}':widgets.Checkbox(value=self.use_compel, description="Use Compel", indent=False, style=items_style, layout=items_layout)
+            g(f'{self.prompt=}'):widgets.Textarea(value=self.prompt, placeholder='Type positive1...', description='Prompt1:', style=items_style, layout=prompts_layout),
+            g(f'{self.prompt_2=}'):widgets.Textarea(value=self.prompt_2, placeholder='Type positive2...', description='Prompt2:', style=items_style, layout=prompts_layout),
+            g(f'{self.negative_prompt=}'):widgets.Textarea(value=self.negative_prompt, placeholder='Type negative1...', description='Negative Prompt1:', style = items_style, layout=prompts_layout),
+            g(f'{self.negative_prompt_2=}'):widgets.Textarea(value=self.negative_prompt_2, placeholder='Type negative2...', description='Negative Prompt2:', style = items_style, layout=prompts_layout),
+            g(f'{self.use_compel=}'):widgets.Checkbox(value=self.use_compel, description="Use Compel", indent=False, style=items_style, layout=items_layout)
         }
         right_box = {
             # models, precisions, schedulers
-            f'{self.base_pipe_model=}':widgets.Text(value=self.base_pipe_model, placeholder='', description='Base model:', style=items_style, layout=items_layout),
-            f'{self.refiner_pipe_model=}':widgets.Text(value=self.refiner_pipe_model, placeholder='', description='Refiner model:', style=items_style, layout=items_layout),
-            f'{self.torch_dtype_str=}':widgets.Dropdown(value=self.torch_dtype_str, options=PRECISION.keys(), description='dtype:', style=items_style, layout=items_layout),
-            f'{self.variant=}':widgets.Text(value=self.variant, placeholder='', description='Variant:', style=items_style, layout=items_layout),
-            f'{self.use_safetensors=}':widgets.Checkbox(value=self.use_safetensors, description="Use safetensors", indent=False, style=items_style, layout=items_layout),
+            g(f'{self.base_pipe_model=}'):widgets.Text(value=self.base_pipe_model, placeholder='', description='Base model:', style=items_style, layout=items_layout),
+            g(f'{self.refiner_pipe_model=}'):widgets.Text(value=self.refiner_pipe_model, placeholder='', description='Refiner model:', style=items_style, layout=items_layout),
+            g(f'{self.torch_dtype_str=}'):widgets.Dropdown(value=self.torch_dtype_str, options=PRECISION.keys(), description='dtype:', style=items_style, layout=items_layout),
+            g(f'{self.variant=}'):widgets.Text(value=self.variant, placeholder='', description='Variant:', style=items_style, layout=items_layout),
+            g(f'{self.use_safetensors=}'):widgets.Checkbox(value=self.use_safetensors, description="Use safetensors", indent=False, style=items_style, layout=items_layout),
             base_pipeline_str_key:widgets.Dropdown(value=self.base_pipeline_type_str, options=BASE_PIPELINES.keys(), description='Base type:', style=items_style, layout=items_layout),
-            f'{self.refiner_pipeline_type_str=}':widgets.Dropdown(value=self.refiner_pipeline_type_str, options=REFINER_PIPELINES.keys(), description='Refiner type:', style=items_style, layout=items_layout),
-            f'{self.scheduler_type_str=}':widgets.Dropdown(value=self.scheduler_type_str, options=SCHEDULERS.keys(), description='Scheduler type:', style=items_style, layout=items_layout),
+            g(f'{self.refiner_pipeline_type_str=}'):widgets.Dropdown(value=self.refiner_pipeline_type_str, options=REFINER_PIPELINES.keys(), description='Refiner type:', style=items_style, layout=items_layout),
+            g(f'{self.scheduler_type_str=}'):widgets.Dropdown(value=self.scheduler_type_str, options=SCHEDULERS.keys(), description='Scheduler type:', style=items_style, layout=items_layout),
             
             # inference properties
-            f'{self.num_inference_steps=}':widgets.IntSlider(value=self.num_inference_steps, min=10, max=100, step=5, description="Num inference steps:", continuous_update=False, style=items_style, layout=items_layout),
-            f'{self.width=}':widgets.IntSlider(value=self.width, min=512, max=1024, step=64, description="Width:", continuous_update=False, style=items_style, layout=items_layout),
-            f'{self.height=}':widgets.IntSlider(value=self.height, min=512, max=1024, step=64, description="Height:", continuous_update=False, style=items_style, layout=items_layout),
-            f'{self.guidance_scale=}':widgets.FloatSlider(value=self.guidance_scale, min=0, max=10, step=0.25, description="Guidance scale:", continuous_update=False, style=items_style, layout=items_layout),
-            f'{self.seed=}':widgets.IntSlider(value=self.seed, min=0, max=1000000, step=1, description="Seed:", continuous_update=False, style=items_style, layout=items_layout),
-            f'{self.high_noise_frac=}':widgets.FloatSlider(value=self.high_noise_frac, min=0, max=1, step=0.05, description="High noise frac:", continuous_update=False, style=items_style, layout=items_layout),
+            g(f'{self.num_inference_steps=}'):widgets.IntSlider(value=self.num_inference_steps, min=10, max=100, step=5, description="Num inference steps:", continuous_update=False, style=items_style, layout=items_layout),
+            g(f'{self.width=}'):widgets.IntSlider(value=self.width, min=512, max=1024, step=64, description="Width:", continuous_update=False, style=items_style, layout=items_layout),
+            g(f'{self.height=}'):widgets.IntSlider(value=self.height, min=512, max=1024, step=64, description="Height:", continuous_update=False, style=items_style, layout=items_layout),
+            g(f'{self.guidance_scale=}'):widgets.FloatSlider(value=self.guidance_scale, min=0, max=10, step=0.25, description="Guidance scale:", continuous_update=False, style=items_style, layout=items_layout),
+            g(f'{self.seed=}'):widgets.IntSlider(value=self.seed, min=0, max=1000000, step=1, description="Seed:", continuous_update=False, style=items_style, layout=items_layout),
+            g(f'{self.high_noise_frac=}'):widgets.FloatSlider(value=self.high_noise_frac, min=0, max=1, step=0.05, description="High noise frac:", continuous_update=False, style=items_style, layout=items_layout),
 
             # refiner
-            f'{self.use_refiner=}':widgets.Checkbox(value=self.use_refiner, description="Use refiner", indent=False, style=items_style, layout=items_layout),
+            g(f'{self.use_refiner=}'):widgets.Checkbox(value=self.use_refiner, description="Use refiner", indent=False, style=items_style, layout=items_layout),
 
             # img2img and inpaint
-            f'{self.strength=}':widgets.FloatSlider(value=self.strength, min=0, max=1, step=0.05, description="Strength:", continuous_update=False, style=items_style, layout=items_layout),
-            f'{self.image_path=}':widgets.Text(value=self.image_path, placeholder='', description='Image path:', style=items_style, layout=items_layout),
-            f'{self.mask_path=}':widgets.Text(value=self.mask_path, placeholder='', description='Mask path:', style=items_style, layout=items_layout)
+            g(f'{self.strength=}'):widgets.FloatSlider(value=self.strength, min=0, max=1, step=0.05, description="Strength:", continuous_update=False, style=items_style, layout=items_layout),
+            g(f'{self.image_path=}'):widgets.Text(value=self.image_path, placeholder='', description='Image path:', style=items_style, layout=items_layout),
+            g(f'{self.mask_path=}'):widgets.Text(value=self.mask_path, placeholder='', description='Mask path:', style=items_style, layout=items_layout)
         }
         
         # on base pipeline type changed
@@ -174,5 +181,5 @@ class SDXLConfig:
         ui = HBox([VBox(list(left_box.values()), layout=Layout(width='50%', margin='10px 20px 10px 0')),
                    VBox(list(right_box.values()), layout=Layout(width='50%', margin='10px 0 10px 0'))])
         boxes = left_box | right_box
-        [interactive_output(f, {'x':x, 'f_name':fixed(f_name)}) for f_name,x in boxes.items()]
+        [interactive_output(f, {'x':x, 'name':fixed(name)}) for name,x in boxes.items()]
         display(ui)

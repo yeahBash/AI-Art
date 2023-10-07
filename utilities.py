@@ -36,6 +36,6 @@ def save_results(image:Image, config_path:str, ref_image:Image = None, mask_imag
     shutil.copyfile(config_path, f"results\{now_date}.json")
     image.save(f"results\{now_date}.png")
     if ref_image is not None:
-        ref_image.save(f"results\ref_{now_date}.png")
+        ref_image.save(f"results\\ref_{now_date}.png")
     if mask_image is not None:
         mask_image.save(f"results\mask_{now_date}.png")
