@@ -141,8 +141,8 @@ class SDXLConfig:
             # prompts
             g(f'{self.prompt=}'):widgets.Textarea(value=self.prompt, placeholder='Type positive1...', description='Prompt1:', style=items_style, layout=prompts_layout),
             g(f'{self.prompt_2=}'):widgets.Textarea(value=self.prompt_2, placeholder='Type positive2...', description='Prompt2:', style=items_style, layout=prompts_layout),
-            g(f'{self.negative_prompt=}'):widgets.Textarea(value=self.negative_prompt, placeholder='Type negative1...', description='Negative Prompt1:', style = items_style, layout=prompts_layout),
-            g(f'{self.negative_prompt_2=}'):widgets.Textarea(value=self.negative_prompt_2, placeholder='Type negative2...', description='Negative Prompt2:', style = items_style, layout=prompts_layout),
+            g(f'{self.negative_prompt=}'):widgets.Textarea(value=self.negative_prompt, placeholder='Type negative1...', description='Negative Prompt1:', style=items_style, layout=prompts_layout),
+            g(f'{self.negative_prompt_2=}'):widgets.Textarea(value=self.negative_prompt_2, placeholder='Type negative2...', description='Negative Prompt2:', style=items_style, layout=prompts_layout),
             g(f'{self.use_compel=}'):widgets.Checkbox(value=self.use_compel, description="Use Compel", indent=False, style=items_style, layout=items_layout)
         }
         right_box = {
@@ -183,3 +183,9 @@ class SDXLConfig:
         boxes = left_box | right_box
         [interactive_output(f, {'x':x, 'name':fixed(name)}) for name,x in boxes.items()]
         display(ui)
+
+        # save button
+        def s(b): self.save_config()
+        button = widgets.Button(description="Save config")
+        button.on_click(s)
+        display(button)
