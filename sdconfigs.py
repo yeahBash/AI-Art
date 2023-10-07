@@ -45,8 +45,8 @@ class SDXLConfig:
                  seed: int = 12345,
                  use_refiner: bool = False,
                  strength: float = 0.3,
-                 image_path: str = "ref_image.jpg",
-                 mask_path: str = "mask.jpg",
+                 image_path: str = "ref_image.png",
+                 mask_path: str = "mask.png",
                  ):
         self.base_pipe_model = base_pipe_model
         self.refiner_pipe_model = refiner_pipe_model
@@ -81,9 +81,9 @@ class SDXLConfig:
     @property
     def scheduler_type(self):return SCHEDULERS[self.scheduler_type_str]
     @property
-    def image(self):return Image.open(self.image_path)
+    def image(self):return Image.open(self.image_path) if self.base_pipeline_type == StableDiffusionXLImg2ImgPipeline or self.base_pipeline_type == StableDiffusionXLInpaintPipeline else None
     @property
-    def mask(self):return Image.open(self.mask_path)
+    def mask(self):return Image.open(self.mask_path) if self.base_pipeline_type == StableDiffusionXLInpaintPipeline else None
     @property
     def kwargs(self): # choose additional arguments
         kwargs = {}
@@ -117,7 +117,16 @@ class SDXLConfig:
     def set_ui(self):
         # TODO: not best workaround to get variable name
         def f(x, f_name): setattr(self, f_name.split('=')[0].split('.')[1], x)
-
+        
+        def on_base_pipe_dropdown_changed(change): on_base_pipe_changed(change.new)
+        def on_base_pipe_changed(value): 
+            right_box[f'{self.width=}'].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
+            right_box[f'{self.height=}'].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
+            right_box[f'{self.strength=}'].disabled = False if value != "StableDiffusionXLPipeline" else True
+            right_box[f'{self.image_path=}'].disabled = False if value != "StableDiffusionXLPipeline" else True
+            right_box[f'{self.mask_path=}'].disabled = False if value == "StableDiffusionXLInpaintPipeline" else True
+        
+        base_pipeline_str_key = f'{self.base_pipeline_type_str=}'
         prompts_layout = Layout( width='auto', height='100%')
         items_style = {'description_width': 'initial'}
         items_layout = Layout( width='auto')
@@ -136,7 +145,7 @@ class SDXLConfig:
             f'{self.torch_dtype_str=}':widgets.Dropdown(value=self.torch_dtype_str, options=PRECISION.keys(), description='dtype:', style=items_style, layout=items_layout),
             f'{self.variant=}':widgets.Text(value=self.variant, placeholder='', description='Variant:', style=items_style, layout=items_layout),
             f'{self.use_safetensors=}':widgets.Checkbox(value=self.use_safetensors, description="Use safetensors", indent=False, style=items_style, layout=items_layout),
-            f'{self.base_pipeline_type_str=}':widgets.Dropdown(value=self.base_pipeline_type_str, options=BASE_PIPELINES.keys(), description='Base type:', style=items_style, layout=items_layout),
+            base_pipeline_str_key:widgets.Dropdown(value=self.base_pipeline_type_str, options=BASE_PIPELINES.keys(), description='Base type:', style=items_style, layout=items_layout),
             f'{self.refiner_pipeline_type_str=}':widgets.Dropdown(value=self.refiner_pipeline_type_str, options=REFINER_PIPELINES.keys(), description='Refiner type:', style=items_style, layout=items_layout),
             f'{self.scheduler_type_str=}':widgets.Dropdown(value=self.scheduler_type_str, options=SCHEDULERS.keys(), description='Scheduler type:', style=items_style, layout=items_layout),
             
@@ -157,8 +166,13 @@ class SDXLConfig:
             f'{self.mask_path=}':widgets.Text(value=self.mask_path, placeholder='', description='Mask path:', style=items_style, layout=items_layout)
         }
         
-        ui = HBox([VBox(list(left_box.values()), layout=Layout(width='50%', margin='0 20px 0 0')),
-                   VBox(list(right_box.values()), layout=Layout(width='50%'))])
+        # on base pipeline type changed
+        on_base_pipe_changed(self.base_pipeline_type_str)
+        right_box[base_pipeline_str_key].observe(on_base_pipe_dropdown_changed, names='value')
+        
+        # layout
+        ui = HBox([VBox(list(left_box.values()), layout=Layout(width='50%', margin='10px 20px 10px 0')),
+                   VBox(list(right_box.values()), layout=Layout(width='50%', margin='10px 0 10px 0'))])
         boxes = left_box | right_box
         [interactive_output(f, {'x':x, 'f_name':fixed(f_name)}) for f_name,x in boxes.items()]
         display(ui)

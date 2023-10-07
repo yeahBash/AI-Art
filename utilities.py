@@ -31,7 +31,11 @@ def postprocess_latent(pipe, latent):
     )[0].detach()
     return pipe.image_processor.postprocess(vae_output, output_type="pil")[0]
 
-def save_results(image, config_path:str):
+def save_results(image:Image, config_path:str, ref_image:Image = None, mask_image:Image = None):
     now_date = datetime.now().strftime("%m_%d_%Y-%H_%M_%S")
     shutil.copyfile(config_path, f"results\{now_date}.json")
     image.save(f"results\{now_date}.png")
+    if ref_image is not None:
+        ref_image.save(f"results\ref_{now_date}.png")
+    if mask_image is not None:
+        mask_image.save(f"results\mask_{now_date}.png")

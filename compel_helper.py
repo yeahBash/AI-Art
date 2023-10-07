@@ -26,6 +26,8 @@ class SDXLCompelHelper:
 
             base_positive_prompt_embeds, base_positive_prompt_pooled = base_compel(prompt+" "+prompt_2)
             base_negative_prompt_embeds, base_negative_prompt_pooled = base_compel(negative_prompt+" "+negative_prompt_2)
+            base_positive_prompt_embeds, base_negative_prompt_embeds = base_compel.pad_conditioning_tensors_to_same_length([
+                    base_positive_prompt_embeds, base_negative_prompt_embeds])
         else:
             if prompt_2 == "" and negative_prompt_2 == "":
                 # init compel
