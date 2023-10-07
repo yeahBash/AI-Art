@@ -8,18 +8,18 @@ class SDXLCompelHelper:
                  text_encoder,
                  tokenizer_2,
                  text_encoder_2):
-        self.tokenizer = tokenizer
-        self.text_encoder = text_encoder
-        self.tokenizer_2 = tokenizer_2
-        self.text_encoder_2 = text_encoder_2
+        self._tokenizer = tokenizer
+        self._text_encoder = text_encoder
+        self._tokenizer_2 = tokenizer_2
+        self._text_encoder_2 = text_encoder_2
         
     #TODO: refactor method
     def get_embeddings(self, prompt, prompt_2, negative_prompt, negative_prompt_2):
-        if self.tokenizer == None and self.text_encoder == None:
+        if self._tokenizer == None and self._text_encoder == None:
             # init compel
             base_compel = Compel(
-            tokenizer=self.tokenizer_2,
-            text_encoder=self.text_encoder_2,
+            tokenizer=self._tokenizer_2,
+            text_encoder=self._text_encoder_2,
             returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
             requires_pooled=True,
             )
@@ -30,8 +30,8 @@ class SDXLCompelHelper:
             if prompt_2 == "" and negative_prompt_2 == "":
                 # init compel
                 base_compel = Compel(
-                    tokenizer=[self.tokenizer, self.tokenizer_2],
-                    text_encoder=[self.text_encoder, self.text_encoder_2],
+                    tokenizer=[self._tokenizer, self._tokenizer_2],
+                    text_encoder=[self._text_encoder, self._text_encoder_2],
                     returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
                     requires_pooled=[False, True]
                 )
@@ -43,14 +43,14 @@ class SDXLCompelHelper:
             else:
                 # init compels
                 base_compel_1 = Compel(
-                    tokenizer=self.tokenizer,
-                    text_encoder=self.text_encoder,
+                    tokenizer=self._tokenizer,
+                    text_encoder=self._text_encoder,
                     returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
                     requires_pooled=False,
                 )
                 base_compel_2 = Compel(
-                    tokenizer=self.tokenizer_2,
-                    text_encoder=self.text_encoder_2,
+                    tokenizer=self._tokenizer_2,
+                    text_encoder=self._text_encoder_2,
                     returned_embeddings_type=ReturnedEmbeddingsType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED,
                     requires_pooled=True,
                 )
