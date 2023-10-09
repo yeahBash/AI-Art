@@ -19,9 +19,7 @@ SCHEDULERS = {"EulerDiscreteScheduler":EulerDiscreteScheduler,
               "DPMSolverMultistepScheduler":DPMSolverMultistepScheduler}
 PRECISION = {"torch.float16":torch.float16}
 
-class SDXLConfig:
-    CONFIG_PATH = "sdxl_config.json"
-    
+class SDXLConfig:    
     def __init__(self,
                  base_pipe_model: str = "stabilityai/stable-diffusion-xl-base-1.0",
                  refiner_pipe_model: str = "stabilityai/stable-diffusion-xl-refiner-1.0",
@@ -99,7 +97,7 @@ class SDXLConfig:
                 kwargs['height'] = self.height
                 kwargs['image'] = self.image
                 kwargs['strength'] = self.strength
-                kwargs['mask'] = self.mask
+                kwargs['mask_image'] = self.mask
         return kwargs
     
     def to_json(obj):
@@ -107,11 +105,11 @@ class SDXLConfig:
             return obj.__dict__
     def from_json(dict: dict):
             return SDXLConfig(**dict)
-    def load_config():
-         with open(SDXLConfig.CONFIG_PATH, "r") as read_file:
+    def load_config(configPath: str):
+         with open(configPath, "r") as read_file:
             return json.load(read_file, object_hook=SDXLConfig.from_json)
-    def save_config(self):
-         with open(SDXLConfig.CONFIG_PATH, "w") as write_file:
+    def save_config(self, configPath: str):
+         with open(configPath, "w") as write_file:
             json.dump(self, write_file, skipkeys=True, indent=1, default=SDXLConfig.to_json)
 
     def set_ui(self):
@@ -183,9 +181,3 @@ class SDXLConfig:
         boxes = left_box | right_box
         [interactive_output(f, {'x':x, 'name':fixed(name)}) for name,x in boxes.items()]
         display(ui)
-
-        # save button
-        def s(b): self.save_config()
-        button = widgets.Button(description="Save config")
-        button.on_click(s)
-        display(button)
