@@ -100,14 +100,18 @@ class SDXLConfig:
                 kwargs['mask_image'] = self.mask
         return kwargs
     
+    @staticmethod
     def to_json(obj):
         if isinstance(obj, SDXLConfig):
             return obj.__dict__
-    def from_json(dict: dict):
-            return SDXLConfig(**dict)
+    @classmethod
+    def from_json(cls, dict: dict):
+            return cls(**dict)
+    @staticmethod
     def load_config(configPath: str):
          with open(configPath, "r") as read_file:
             return json.load(read_file, object_hook=SDXLConfig.from_json)
+    
     def save_config(self, configPath: str):
          with open(configPath, "w") as write_file:
             json.dump(self, write_file, skipkeys=True, indent=1, default=SDXLConfig.to_json)

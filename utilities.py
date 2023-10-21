@@ -6,6 +6,7 @@ from datetime import datetime
 from PIL import Image
 
 # utilities methods
+@staticmethod
 def to_cuda(pipe, start_mess, end_mess):
     if(torch.cuda.is_available()):
         print(start_mess)
@@ -14,6 +15,7 @@ def to_cuda(pipe, start_mess, end_mess):
         print("CUDA IS NOT AVAILABLE")
     print(end_mess)
 
+@staticmethod
 def image_grid(imgs, rows, cols):
     assert len(imgs) == rows*cols
 
@@ -25,12 +27,14 @@ def image_grid(imgs, rows, cols):
         grid.paste(img, box=(i%cols*w, i//cols*h))
     return grid
 
+@staticmethod
 def postprocess_latent(pipe, latent):
     vae_output = pipe.vae.decode(
         latent.images / pipe.vae.config.scaling_factor, return_dict=False
     )[0].detach()
     return pipe.image_processor.postprocess(vae_output, output_type="pil")[0]
 
+@staticmethod
 def save_results(image:Image, config_path:str, ref_image:Image = None, mask_image:Image = None):
     now_date = datetime.now().strftime("%m_%d_%Y-%H_%M_%S")
     shutil.copyfile(config_path, f"results\{now_date}.json")
