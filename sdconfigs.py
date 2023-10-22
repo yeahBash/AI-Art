@@ -6,7 +6,7 @@ from IPython.display import display
 # for config
 import json
 from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLInpaintPipeline
-from diffusers import EulerDiscreteScheduler, DDIMScheduler, LMSDiscreteScheduler, DPMSolverMultistepScheduler
+from diffusers import EulerDiscreteScheduler, DDIMScheduler, LMSDiscreteScheduler, DPMSolverMultistepScheduler, DPMSolverSDEScheduler
 from PIL import Image
 
 BASE_PIPELINES = {"StableDiffusionXLPipeline":StableDiffusionXLPipeline,
@@ -16,7 +16,8 @@ REFINER_PIPELINES = {"StableDiffusionXLImg2ImgPipeline":StableDiffusionXLImg2Img
 SCHEDULERS = {"EulerDiscreteScheduler":EulerDiscreteScheduler, 
               "DDIMScheduler":DDIMScheduler, 
               "LMSDiscreteScheduler":LMSDiscreteScheduler,
-              "DPMSolverMultistepScheduler":DPMSolverMultistepScheduler}
+              "DPMSolverMultistepScheduler":DPMSolverMultistepScheduler,
+              "DPMSolverSDEScheduler":DPMSolverSDEScheduler}
 PRECISION = {"torch.float16":torch.float16}
 
 class SDXLConfig:    
@@ -27,6 +28,7 @@ class SDXLConfig:
                  base_pipeline_type_str: str = "StableDiffusionXLPipeline",
                  refiner_pipeline_type_str: str = "StableDiffusionXLImg2ImgPipeline",
                  scheduler_type_str: str = "LMSDiscreteScheduler",
+                 use_karras_sigmas: bool = False,
                  variant: str = "fp16",
                  use_safetensors: bool = True,
                  #safety_checker = None
@@ -52,6 +54,7 @@ class SDXLConfig:
         self.base_pipeline_type_str = base_pipeline_type_str
         self.refiner_pipeline_type_str = refiner_pipeline_type_str
         self.scheduler_type_str = scheduler_type_str
+        self.use_karras_sigmas = use_karras_sigmas
         self.variant = variant
         self.use_safetensors = use_safetensors
         self.prompt = prompt
@@ -157,6 +160,7 @@ class SDXLConfig:
             base_pipeline_str_key:widgets.Dropdown(value=self.base_pipeline_type_str, options=BASE_PIPELINES.keys(), description='Base type:', style=items_style, layout=items_layout),
             g(f'{self.refiner_pipeline_type_str=}'):widgets.Dropdown(value=self.refiner_pipeline_type_str, options=REFINER_PIPELINES.keys(), description='Refiner type:', style=items_style, layout=items_layout),
             g(f'{self.scheduler_type_str=}'):widgets.Dropdown(value=self.scheduler_type_str, options=SCHEDULERS.keys(), description='Scheduler type:', style=items_style, layout=items_layout),
+            g(f'{self.use_karras_sigmas=}'):widgets.Checkbox(value=self.use_karras_sigmas, description="Use karras sigmas", indent=False, style=items_style, layout=items_layout),
             
             # inference properties
             g(f'{self.num_inference_steps=}'):widgets.IntSlider(value=self.num_inference_steps, min=10, max=100, step=5, description="Num inference steps:", continuous_update=False, style=items_style, layout=items_layout),
