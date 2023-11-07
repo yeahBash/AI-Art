@@ -8,6 +8,7 @@ import json
 from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLInpaintPipeline
 from diffusers import EulerDiscreteScheduler, DDIMScheduler, LMSDiscreteScheduler, DPMSolverMultistepScheduler, DPMSolverSDEScheduler
 from PIL import Image
+from dataclasses import dataclass
 
 BASE_PIPELINES = {"StableDiffusionXLPipeline":StableDiffusionXLPipeline,
                   "StableDiffusionXLImg2ImgPipeline":StableDiffusionXLImg2ImgPipeline,
@@ -20,58 +21,33 @@ SCHEDULERS = {"EulerDiscreteScheduler":EulerDiscreteScheduler,
               "DPMSolverSDEScheduler":DPMSolverSDEScheduler}
 PRECISION = {"torch.float16":torch.float16}
 
-class SDXLConfig:    
-    def __init__(self,
-                 base_pipe_model: str = "stabilityai/stable-diffusion-xl-base-1.0",
-                 refiner_pipe_model: str = "stabilityai/stable-diffusion-xl-refiner-1.0",
-                 torch_dtype_str: str = "torch.float16",
-                 base_pipeline_type_str: str = "StableDiffusionXLPipeline",
-                 refiner_pipeline_type_str: str = "StableDiffusionXLImg2ImgPipeline",
-                 scheduler_type_str: str = "LMSDiscreteScheduler",
-                 use_karras_sigmas: bool = False,
-                 variant: str = "fp16",
-                 use_safetensors: bool = True,
-                 #safety_checker = None
-                 prompt: str = None,
-                 prompt_2: str = None,
-                 negative_prompt: str = None,
-                 negative_prompt_2: str = None,
-                 use_compel: bool = False,
-                 num_inference_steps: int = 40,
-                 width: int = 768,
-                 height: int = 768,
-                 guidance_scale: float = 7.5,
-                 high_noise_frac: float = 0.8,
-                 seed: int = 12345,
-                 use_refiner: bool = False,
-                 strength: float = 0.3,
-                 image_path: str = "ref_image.png",
-                 mask_path: str = "mask.png",
-                 ):
-        self.base_pipe_model = base_pipe_model
-        self.refiner_pipe_model = refiner_pipe_model
-        self.torch_dtype_str = torch_dtype_str
-        self.base_pipeline_type_str = base_pipeline_type_str
-        self.refiner_pipeline_type_str = refiner_pipeline_type_str
-        self.scheduler_type_str = scheduler_type_str
-        self.use_karras_sigmas = use_karras_sigmas
-        self.variant = variant
-        self.use_safetensors = use_safetensors
-        self.prompt = prompt
-        self.prompt_2 = prompt_2
-        self.negative_prompt = negative_prompt
-        self.negative_prompt_2 = negative_prompt_2
-        self.use_compel = use_compel
-        self.num_inference_steps = num_inference_steps
-        self.width = width
-        self.height = height
-        self.guidance_scale = guidance_scale
-        self.high_noise_frac = high_noise_frac
-        self.seed = seed
-        self.use_refiner = use_refiner
-        self.strength = strength
-        self.image_path = image_path
-        self.mask_path = mask_path
+@dataclass
+class SDXLConfig:
+    base_pipe_model: str = "stabilityai/stable-diffusion-xl-base-1.0"
+    refiner_pipe_model: str = "stabilityai/stable-diffusion-xl-refiner-1.0"
+    torch_dtype_str: str = "torch.float16"
+    base_pipeline_type_str: str = "StableDiffusionXLPipeline"
+    refiner_pipeline_type_str: str = "StableDiffusionXLImg2ImgPipeline"
+    scheduler_type_str: str = "LMSDiscreteScheduler"
+    use_karras_sigmas: bool = False
+    variant: str = "fp16"
+    use_safetensors: bool = True
+    #safety_checker = None
+    prompt: str = None
+    prompt_2: str = None
+    negative_prompt: str = None
+    negative_prompt_2: str = None
+    use_compel: bool = False
+    num_inference_steps: int = 40
+    width: int = 768
+    height: int = 768
+    guidance_scale: float = 7.5
+    high_noise_frac: float = 0.8
+    seed: int = 12345
+    use_refiner: bool = False
+    strength: float = 0.3
+    image_path: str = "ref_image.png"
+    mask_path: str = "mask.png"
 
     @property
     def torch_dtype(self):return PRECISION[self.torch_dtype_str]
