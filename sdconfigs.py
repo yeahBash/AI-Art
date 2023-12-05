@@ -10,9 +10,12 @@ from diffusers import EulerDiscreteScheduler, DDIMScheduler, LMSDiscreteSchedule
 from PIL import Image
 from dataclasses import dataclass
 
+BASE_MODELS = {"SDXL-Base-1.0":"stabilityai/stable-diffusion-xl-base-1.0",
+                  "SDXL-Turbo":"stabilityai/sdxl-turbo",}
+REFINER_MODELS = {"SDXL-Refiner-1.0":"stabilityai/stable-diffusion-xl-refiner-1.0"}
 BASE_PIPELINES = {"StableDiffusionXLPipeline":StableDiffusionXLPipeline,
                   "StableDiffusionXLImg2ImgPipeline":StableDiffusionXLImg2ImgPipeline,
-                  "StableDiffusionXLInpaintPipeline":StableDiffusionXLInpaintPipeline,}
+                  "StableDiffusionXLInpaintPipeline":StableDiffusionXLInpaintPipeline}
 REFINER_PIPELINES = {"StableDiffusionXLImg2ImgPipeline":StableDiffusionXLImg2ImgPipeline}
 SCHEDULERS = {"EulerDiscreteScheduler":EulerDiscreteScheduler, 
               "DDIMScheduler":DDIMScheduler, 
@@ -23,8 +26,8 @@ PRECISION = {"torch.float16":torch.float16}
 
 @dataclass
 class SDXLConfig:
-    base_pipe_model: str = "stabilityai/stable-diffusion-xl-base-1.0"
-    refiner_pipe_model: str = "stabilityai/stable-diffusion-xl-refiner-1.0"
+    base_model_str: str = "SDXL-Base-1.0"
+    refiner_model_str: str = "SDXL-Refiner-1.0"
     torch_dtype_str: str = "torch.float16"
     base_pipeline_type_str: str = "StableDiffusionXLPipeline"
     refiner_pipeline_type_str: str = "StableDiffusionXLImg2ImgPipeline"
@@ -51,6 +54,10 @@ class SDXLConfig:
 
     @property
     def torch_dtype(self):return PRECISION[self.torch_dtype_str]
+    @property
+    def base_model(self):return BASE_MODELS[self.base_model_str]
+    @property
+    def refiner_model(self):return REFINER_MODELS[self.refiner_model_str]
     @property
     def base_pipeline_type(self):return BASE_PIPELINES[self.base_pipeline_type_str]
     @property
@@ -99,20 +106,24 @@ class SDXLConfig:
         # TODO: not best workaround to get variable name
         def f(x, name): setattr(self, name, x)
         def g(f_name): return f_name.split('=')[0].split('.')[1]
-
+        # def on_base_model_dropdown_changed(change): on_base_model_changed(change.new)
+        # def on_base_model_changed(value): 
+        #         if value != "SDXL-Turbo":
+        #             middle_box[g(f'{self.use_refiner=}')].value = False
+        #             middle_box[g(f'{self.high_noise_frac=}')].value = 1.0
         def on_base_pipe_dropdown_changed(change): on_base_pipe_changed(change.new)
         def on_base_pipe_changed(value): 
-            right_box[g(f'{self.width=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
-            right_box[g(f'{self.height=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
-            right_box[g(f'{self.strength=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
-            right_box[g(f'{self.image_path=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
-            right_box[g(f'{self.mask_path=}')].disabled = False if value == "StableDiffusionXLInpaintPipeline" else True
-            right_box[g(f'{self.use_refiner=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
-            right_box[g(f'{self.high_noise_frac=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
+            middle_box[g(f'{self.width=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
+            middle_box[g(f'{self.height=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
+            middle_box[g(f'{self.strength=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
+            middle_box[g(f'{self.image_path=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
+            middle_box[g(f'{self.mask_path=}')].disabled = False if value == "StableDiffusionXLInpaintPipeline" else True
+            middle_box[g(f'{self.use_refiner=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
+            middle_box[g(f'{self.high_noise_frac=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
             
             if value != "StableDiffusionXLPipeline":
-                right_box[g(f'{self.use_refiner=}')].value = False
-                right_box[g(f'{self.high_noise_frac=}')].value = 1.0
+                middle_box[g(f'{self.use_refiner=}')].value = False
+                middle_box[g(f'{self.high_noise_frac=}')].value = 1.0
             
         base_pipeline_str_key = g(f'{self.base_pipeline_type_str=}')
         prompts_layout = Layout( width='auto', height='100%')
@@ -126,10 +137,10 @@ class SDXLConfig:
             g(f'{self.negative_prompt_2=}'):widgets.Textarea(value=self.negative_prompt_2, placeholder='Type negative2...', description='Negative Prompt2:', style=items_style, layout=prompts_layout),
             g(f'{self.use_compel=}'):widgets.Checkbox(value=self.use_compel, description="Use Compel", indent=False, style=items_style, layout=items_layout)
         }
-        right_box = {
+        middle_box = {
             # models, precisions, schedulers
-            g(f'{self.base_pipe_model=}'):widgets.Text(value=self.base_pipe_model, placeholder='', description='Base model:', style=items_style, layout=items_layout),
-            g(f'{self.refiner_pipe_model=}'):widgets.Text(value=self.refiner_pipe_model, placeholder='', description='Refiner model:', style=items_style, layout=items_layout),
+            g(f'{self.base_model_str=}'):widgets.Dropdown(value=self.base_model_str, options=BASE_MODELS.keys(), description='Base model:', style=items_style, layout=items_layout),
+            g(f'{self.refiner_model_str=}'):widgets.Dropdown(value=self.refiner_model_str, options=REFINER_MODELS.keys(), description='Refiner model:', style=items_style, layout=items_layout),
             g(f'{self.torch_dtype_str=}'):widgets.Dropdown(value=self.torch_dtype_str, options=PRECISION.keys(), description='dtype:', style=items_style, layout=items_layout),
             g(f'{self.variant=}'):widgets.Text(value=self.variant, placeholder='', description='Variant:', style=items_style, layout=items_layout),
             g(f'{self.use_safetensors=}'):widgets.Checkbox(value=self.use_safetensors, description="Use safetensors", indent=False, style=items_style, layout=items_layout),
@@ -139,7 +150,7 @@ class SDXLConfig:
             g(f'{self.use_karras_sigmas=}'):widgets.Checkbox(value=self.use_karras_sigmas, description="Use karras sigmas", indent=False, style=items_style, layout=items_layout),
             
             # inference properties
-            g(f'{self.num_inference_steps=}'):widgets.IntSlider(value=self.num_inference_steps, min=10, max=100, step=5, description="Num inference steps:", continuous_update=False, style=items_style, layout=items_layout),
+            g(f'{self.num_inference_steps=}'):widgets.IntSlider(value=self.num_inference_steps, min=1, max=100, step=1, description="Num inference steps:", continuous_update=False, style=items_style, layout=items_layout),
             g(f'{self.width=}'):widgets.IntSlider(value=self.width, min=512, max=1024, step=64, description="Width:", continuous_update=False, style=items_style, layout=items_layout),
             g(f'{self.height=}'):widgets.IntSlider(value=self.height, min=512, max=1024, step=64, description="Height:", continuous_update=False, style=items_style, layout=items_layout),
             g(f'{self.guidance_scale=}'):widgets.FloatSlider(value=self.guidance_scale, min=0, max=10, step=0.25, description="Guidance scale:", continuous_update=False, style=items_style, layout=items_layout),
@@ -157,11 +168,11 @@ class SDXLConfig:
         
         # on base pipeline type changed
         on_base_pipe_changed(self.base_pipeline_type_str)
-        right_box[base_pipeline_str_key].observe(on_base_pipe_dropdown_changed, names='value')
+        middle_box[base_pipeline_str_key].observe(on_base_pipe_dropdown_changed, names='value')
         
         # layout
-        ui = HBox([VBox(list(left_box.values()), layout=Layout(width='50%', margin='10px 20px 10px 0')),
-                   VBox(list(right_box.values()), layout=Layout(width='50%', margin='10px 0 10px 0'))])
-        boxes = left_box | right_box
+        ui = HBox([VBox(list(left_box.values()), layout=Layout(width='33%', margin='10px 20px 10px 0')),
+                   VBox(list(middle_box.values()), layout=Layout(width='33%', margin='10px 0 10px 0'))])
+        boxes = left_box | middle_box
         [interactive_output(f, {'x':x, 'name':fixed(name)}) for name,x in boxes.items()]
         display(ui)
