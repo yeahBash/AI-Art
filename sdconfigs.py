@@ -1,8 +1,7 @@
 import torch
 # for parameters ui
-from ipywidgets import interactive_output, fixed, VBox, HBox, Layout
+from ipywidgets import interactive_output, fixed, Layout
 import ipywidgets as widgets
-from IPython.display import display
 # for config
 import json
 from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLInpaintPipeline
@@ -10,9 +9,8 @@ from diffusers import EulerDiscreteScheduler, DDIMScheduler, LMSDiscreteSchedule
 from PIL import Image
 from dataclasses import dataclass
 
-BASE_MODELS = {"SDXL-Base-1.0":"stabilityai/stable-diffusion-xl-base-1.0",
-                  "SDXL-Turbo":"stabilityai/sdxl-turbo",}
-REFINER_MODELS = {"SDXL-Refiner-1.0":"stabilityai/stable-diffusion-xl-refiner-1.0"}
+BASE_MODELS = ["stabilityai/stable-diffusion-xl-base-1.0", "stabilityai/sdxl-turbo"]
+REFINER_MODELS = ["stabilityai/stable-diffusion-xl-refiner-1.0"]
 BASE_PIPELINES = {"StableDiffusionXLPipeline":StableDiffusionXLPipeline,
                   "StableDiffusionXLImg2ImgPipeline":StableDiffusionXLImg2ImgPipeline,
                   "StableDiffusionXLInpaintPipeline":StableDiffusionXLInpaintPipeline}
@@ -22,17 +20,26 @@ SCHEDULERS = {"EulerDiscreteScheduler":EulerDiscreteScheduler,
               "LMSDiscreteScheduler":LMSDiscreteScheduler,
               "DPMSolverMultistepScheduler":DPMSolverMultistepScheduler,
               "DPMSolverSDEScheduler":DPMSolverSDEScheduler}
+SCHEDULER_TIMESTEP_SPACINGS = ["linspace", "leading", "trailing"]
 PRECISION = {"torch.float16":torch.float16}
+VARIANTS = ["fp16"]
+
+@dataclass
+class UIData:
+    prompt: widgets.widgets.Textarea = None
+    prompt_box: list[widgets.widget_core.CoreWidget] = None
+    params_box: list[widgets.widget_core.CoreWidget] = None
 
 @dataclass
 class SDXLConfig:
-    base_model_str: str = "SDXL-Base-1.0"
-    refiner_model_str: str = "SDXL-Refiner-1.0"
+    base_model: str = "stabilityai/stable-diffusion-xl-base-1.0"
+    refiner_model: str = "stabilityai/stable-diffusion-xl-refiner-1.0"
     torch_dtype_str: str = "torch.float16"
     base_pipeline_type_str: str = "StableDiffusionXLPipeline"
     refiner_pipeline_type_str: str = "StableDiffusionXLImg2ImgPipeline"
     scheduler_type_str: str = "LMSDiscreteScheduler"
     use_karras_sigmas: bool = False
+    timestep_spacing: str = "linspace"
     variant: str = "fp16"
     use_safetensors: bool = True
     #safety_checker = None
@@ -45,7 +52,7 @@ class SDXLConfig:
     width: int = 768
     height: int = 768
     guidance_scale: float = 7.5
-    high_noise_frac: float = 0.8
+    high_noise_frac: float = 1.0
     seed: int = 12345
     use_refiner: bool = False
     strength: float = 0.3
@@ -54,10 +61,6 @@ class SDXLConfig:
 
     @property
     def torch_dtype(self):return PRECISION[self.torch_dtype_str]
-    @property
-    def base_model(self):return BASE_MODELS[self.base_model_str]
-    @property
-    def refiner_model(self):return REFINER_MODELS[self.refiner_model_str]
     @property
     def base_pipeline_type(self):return BASE_PIPELINES[self.base_pipeline_type_str]
     @property
@@ -86,6 +89,10 @@ class SDXLConfig:
                 kwargs['mask_image'] = self.mask
         return kwargs
     
+    @property
+    def is_turbo(self):return self.__check_turbo(self.base_model)
+    def __check_turbo(self, base_model):return base_model == "stabilityai/sdxl-turbo"
+
     @staticmethod
     def to_json(obj):
         if isinstance(obj, SDXLConfig):
@@ -96,58 +103,64 @@ class SDXLConfig:
     @staticmethod
     def load_config(configPath: str):
          with open(configPath, "r") as read_file:
-            return json.load(read_file, object_hook=SDXLConfig.from_json)
-    
+            return json.load(read_file, object_hook=SDXLConfig.from_json)  
     def save_config(self, configPath: str):
          with open(configPath, "w") as write_file:
             json.dump(self, write_file, skipkeys=True, indent=1, default=SDXLConfig.to_json)
 
-    def set_ui(self):
-        # TODO: not best workaround to get variable name
-        def f(x, name): setattr(self, name, x)
+    def get_ui(self) -> UIData:
+        def f(x, name): setattr(self, name, x) #TODO: not best workaround to get variable name
         def g(f_name): return f_name.split('=')[0].split('.')[1]
-        # def on_base_model_dropdown_changed(change): on_base_model_changed(change.new)
-        # def on_base_model_changed(value): 
-        #         if value != "SDXL-Turbo":
-        #             middle_box[g(f'{self.use_refiner=}')].value = False
-        #             middle_box[g(f'{self.high_noise_frac=}')].value = 1.0
+        def on_base_model_dropdown_changed(change): on_base_model_changed(change.new)
+        def on_base_model_changed(value): 
+                prompt_box[g(f'{self.negative_prompt=}')].disabled = True if self.__check_turbo(value) else False
+                prompt_box[g(f'{self.negative_prompt_2=}')].disabled = True if self.__check_turbo(value) else False
+                params_box[g(f'{self.guidance_scale=}')].value = 0.0 if self.__check_turbo(value) else SDXLConfig().guidance_scale
+                params_box[g(f'{self.timestep_spacing=}')].value = "trailing" if self.__check_turbo(value) else SDXLConfig().timestep_spacing
+                params_box[g(f'{self.num_inference_steps=}')].value = 1 if self.__check_turbo(value) else SDXLConfig().num_inference_steps
+                params_box[g(f'{self.width=}')].value = 512 if self.__check_turbo(value) else SDXLConfig().width
+                params_box[g(f'{self.height=}')].value = 512 if self.__check_turbo(value) else SDXLConfig().height
+                params_box[g(f'{self.high_noise_frac=}')].disabled = True if self.__check_turbo(value) else False
         def on_base_pipe_dropdown_changed(change): on_base_pipe_changed(change.new)
         def on_base_pipe_changed(value): 
-            middle_box[g(f'{self.width=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
-            middle_box[g(f'{self.height=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
-            middle_box[g(f'{self.strength=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
-            middle_box[g(f'{self.image_path=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
-            middle_box[g(f'{self.mask_path=}')].disabled = False if value == "StableDiffusionXLInpaintPipeline" else True
-            middle_box[g(f'{self.use_refiner=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
-            middle_box[g(f'{self.high_noise_frac=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
+            params_box[g(f'{self.width=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
+            params_box[g(f'{self.height=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
+            params_box[g(f'{self.strength=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
+            params_box[g(f'{self.image_path=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
+            params_box[g(f'{self.mask_path=}')].disabled = False if value == "StableDiffusionXLInpaintPipeline" else True
+            params_box[g(f'{self.use_refiner=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
+            params_box[g(f'{self.high_noise_frac=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
             
             if value != "StableDiffusionXLPipeline":
-                middle_box[g(f'{self.use_refiner=}')].value = False
-                middle_box[g(f'{self.high_noise_frac=}')].value = 1.0
+                params_box[g(f'{self.use_refiner=}')].value = False
+                params_box[g(f'{self.high_noise_frac=}')].value = 1.0
             
+        prompt_key = g(f'{self.prompt=}')
+        base_model_str_key = g(f'{self.base_model=}')
         base_pipeline_str_key = g(f'{self.base_pipeline_type_str=}')
         prompts_layout = Layout( width='auto', height='100%')
         items_style = {'description_width': 'initial'}
         items_layout = Layout( width='auto')
-        left_box = {
+        prompt_box = {
             # prompts
-            g(f'{self.prompt=}'):widgets.Textarea(value=self.prompt, placeholder='Type positive1...', description='Prompt1:', style=items_style, layout=prompts_layout),
+            prompt_key:widgets.Textarea(value=self.prompt, placeholder='Type positive1...', description='Prompt1:', style=items_style, layout=prompts_layout),
             g(f'{self.prompt_2=}'):widgets.Textarea(value=self.prompt_2, placeholder='Type positive2...', description='Prompt2:', style=items_style, layout=prompts_layout),
             g(f'{self.negative_prompt=}'):widgets.Textarea(value=self.negative_prompt, placeholder='Type negative1...', description='Negative Prompt1:', style=items_style, layout=prompts_layout),
             g(f'{self.negative_prompt_2=}'):widgets.Textarea(value=self.negative_prompt_2, placeholder='Type negative2...', description='Negative Prompt2:', style=items_style, layout=prompts_layout),
             g(f'{self.use_compel=}'):widgets.Checkbox(value=self.use_compel, description="Use Compel", indent=False, style=items_style, layout=items_layout)
         }
-        middle_box = {
+        params_box = {
             # models, precisions, schedulers
-            g(f'{self.base_model_str=}'):widgets.Dropdown(value=self.base_model_str, options=BASE_MODELS.keys(), description='Base model:', style=items_style, layout=items_layout),
-            g(f'{self.refiner_model_str=}'):widgets.Dropdown(value=self.refiner_model_str, options=REFINER_MODELS.keys(), description='Refiner model:', style=items_style, layout=items_layout),
+            base_model_str_key:widgets.Dropdown(value=self.base_model, options=BASE_MODELS, description='Base model:', style=items_style, layout=items_layout),
+            g(f'{self.refiner_model=}'):widgets.Dropdown(value=self.refiner_model, options=REFINER_MODELS, description='Refiner model:', style=items_style, layout=items_layout),
             g(f'{self.torch_dtype_str=}'):widgets.Dropdown(value=self.torch_dtype_str, options=PRECISION.keys(), description='dtype:', style=items_style, layout=items_layout),
-            g(f'{self.variant=}'):widgets.Text(value=self.variant, placeholder='', description='Variant:', style=items_style, layout=items_layout),
+            g(f'{self.variant=}'):widgets.Dropdown(value=self.variant, options=VARIANTS, description='Variant:', style=items_style, layout=items_layout),
             g(f'{self.use_safetensors=}'):widgets.Checkbox(value=self.use_safetensors, description="Use safetensors", indent=False, style=items_style, layout=items_layout),
             base_pipeline_str_key:widgets.Dropdown(value=self.base_pipeline_type_str, options=BASE_PIPELINES.keys(), description='Base type:', style=items_style, layout=items_layout),
             g(f'{self.refiner_pipeline_type_str=}'):widgets.Dropdown(value=self.refiner_pipeline_type_str, options=REFINER_PIPELINES.keys(), description='Refiner type:', style=items_style, layout=items_layout),
             g(f'{self.scheduler_type_str=}'):widgets.Dropdown(value=self.scheduler_type_str, options=SCHEDULERS.keys(), description='Scheduler type:', style=items_style, layout=items_layout),
             g(f'{self.use_karras_sigmas=}'):widgets.Checkbox(value=self.use_karras_sigmas, description="Use karras sigmas", indent=False, style=items_style, layout=items_layout),
+            g(f'{self.timestep_spacing=}'):widgets.Dropdown(value=self.timestep_spacing, options=SCHEDULER_TIMESTEP_SPACINGS, description='Scheduler timestep spacing:', style=items_style, layout=items_layout),
             
             # inference properties
             g(f'{self.num_inference_steps=}'):widgets.IntSlider(value=self.num_inference_steps, min=1, max=100, step=1, description="Num inference steps:", continuous_update=False, style=items_style, layout=items_layout),
@@ -165,14 +178,15 @@ class SDXLConfig:
             g(f'{self.image_path=}'):widgets.Text(value=self.image_path, placeholder='', description='Image path:', style=items_style, layout=items_layout),
             g(f'{self.mask_path=}'):widgets.Text(value=self.mask_path, placeholder='', description='Mask path:', style=items_style, layout=items_layout)
         }
-        
+
+        # on base model changed
+        on_base_model_changed(self.base_model)
+        params_box[base_model_str_key].observe(on_base_model_dropdown_changed, names='value')
         # on base pipeline type changed
         on_base_pipe_changed(self.base_pipeline_type_str)
-        middle_box[base_pipeline_str_key].observe(on_base_pipe_dropdown_changed, names='value')
+        params_box[base_pipeline_str_key].observe(on_base_pipe_dropdown_changed, names='value')
         
         # layout
-        ui = HBox([VBox(list(left_box.values()), layout=Layout(width='33%', margin='10px 20px 10px 0')),
-                   VBox(list(middle_box.values()), layout=Layout(width='33%', margin='10px 0 10px 0'))])
-        boxes = left_box | middle_box
+        boxes = prompt_box | params_box
         [interactive_output(f, {'x':x, 'name':fixed(name)}) for name,x in boxes.items()]
-        display(ui)
+        return UIData(prompt_box[prompt_key], list(prompt_box.values()), list(params_box.values()))

@@ -4,6 +4,8 @@ import shutil
 from datetime import datetime
 # for image_grid
 from PIL import Image
+# for conversions
+from io import BytesIO
 
 # utilities methods
 @staticmethod
@@ -43,3 +45,10 @@ def save_results(image:Image, config_path:str, ref_image:Image = None, mask_imag
         ref_image.save(f"results\\ref_{now_date}.png")
     if mask_image is not None:
         mask_image.save(f"results\mask_{now_date}.png")
+
+@staticmethod
+def compressed_img_to_bytes(image:Image, format:str) -> bytes:
+    with BytesIO() as bytesIO:
+        image.save(bytesIO, format=format)
+        bytes = bytesIO.getvalue()
+    return bytes
