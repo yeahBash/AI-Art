@@ -107,7 +107,18 @@ class SDXLConfig:
     def save_config(self, configPath: str):
          with open(configPath, "w") as write_file:
             json.dump(self, write_file, skipkeys=True, indent=1, default=SDXLConfig.to_json)
-
+    def model_params_equals(self, obj) -> bool: # TODO: refactor
+        if isinstance(obj, SDXLConfig):
+            return (self.base_model == obj.base_model and 
+                    self.refiner_model == obj.refiner_model and 
+                    self.torch_dtype_str == obj.torch_dtype_str and 
+                    self.base_pipeline_type_str == obj.base_pipeline_type_str and 
+                    self.refiner_pipeline_type_str == obj.refiner_pipeline_type_str and 
+                    self.scheduler_type_str == obj.scheduler_type_str and 
+                    self.use_karras_sigmas == obj.use_karras_sigmas and 
+                    self.timestep_spacing == obj.timestep_spacing and 
+                    self.variant == obj.variant and 
+                    self.use_safetensors == obj.use_safetensors)
     def get_ui(self) -> UIData:
         def f(x, name): setattr(self, name, x) #TODO: not best workaround to get variable name
         def g(f_name): return f_name.split('=')[0].split('.')[1]
