@@ -122,18 +122,23 @@ class SDXLConfig:
     def get_ui(self) -> UIData:
         def f(x, name): setattr(self, name, x) #TODO: not best workaround to get variable name
         def g(f_name): return f_name.split('=')[0].split('.')[1]
-        def on_base_model_dropdown_changed(change): on_base_model_changed(change.new)
-        def on_base_model_changed(value): 
+        def on_base_model_dropdown_changed(change): 
+            disable_based_on_model(change.new)
+            change_values_based_on_model(change.new)
+        def disable_based_on_model(value): 
                 prompt_box[g(f'{self.negative_prompt=}')].disabled = True if self.__check_turbo(value) else False
                 prompt_box[g(f'{self.negative_prompt_2=}')].disabled = True if self.__check_turbo(value) else False
+                params_box[g(f'{self.high_noise_frac=}')].disabled = True if self.__check_turbo(value) else False
+        def change_values_based_on_model(value): 
                 params_box[g(f'{self.guidance_scale=}')].value = 0.0 if self.__check_turbo(value) else SDXLConfig().guidance_scale
                 params_box[g(f'{self.timestep_spacing=}')].value = "trailing" if self.__check_turbo(value) else SDXLConfig().timestep_spacing
                 params_box[g(f'{self.num_inference_steps=}')].value = 1 if self.__check_turbo(value) else SDXLConfig().num_inference_steps
                 params_box[g(f'{self.width=}')].value = 512 if self.__check_turbo(value) else SDXLConfig().width
                 params_box[g(f'{self.height=}')].value = 512 if self.__check_turbo(value) else SDXLConfig().height
-                params_box[g(f'{self.high_noise_frac=}')].disabled = True if self.__check_turbo(value) else False
-        def on_base_pipe_dropdown_changed(change): on_base_pipe_changed(change.new)
-        def on_base_pipe_changed(value): 
+        def on_base_pipe_dropdown_changed(change): 
+            disable_based_on_pipe(change.new)
+            change_values_based_on_pipe(change.new)
+        def disable_based_on_pipe(value): 
             params_box[g(f'{self.width=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
             params_box[g(f'{self.height=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
             params_box[g(f'{self.strength=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
@@ -141,7 +146,7 @@ class SDXLConfig:
             params_box[g(f'{self.mask_path=}')].disabled = False if value == "StableDiffusionXLInpaintPipeline" else True
             params_box[g(f'{self.use_refiner=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
             params_box[g(f'{self.high_noise_frac=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
-            
+        def change_values_based_on_pipe(value): 
             if value != "StableDiffusionXLPipeline":
                 params_box[g(f'{self.use_refiner=}')].value = False
                 params_box[g(f'{self.high_noise_frac=}')].value = 1.0
@@ -191,10 +196,10 @@ class SDXLConfig:
         }
 
         # on base model changed
-        on_base_model_changed(self.base_model)
+        disable_based_on_model(self.base_model)
         params_box[base_model_str_key].observe(on_base_model_dropdown_changed, names='value')
         # on base pipeline type changed
-        on_base_pipe_changed(self.base_pipeline_type_str)
+        disable_based_on_pipe(self.base_pipeline_type_str)
         params_box[base_pipeline_str_key].observe(on_base_pipe_dropdown_changed, names='value')
         
         # layout
