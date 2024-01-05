@@ -90,8 +90,10 @@ class SDXLConfig:
         return kwargs
     
     @property
-    def is_turbo(self):return self.__check_turbo(self.base_model)
-    def __check_turbo(self, base_model):return base_model == "stabilityai/sdxl-turbo"
+    def is_turbo(self):return self.__check_turbo__(self.base_model)
+    def __check_turbo__(self, base_model):return base_model == "stabilityai/sdxl-turbo"
+    @property
+    def is_base_to_refiner(self):return self.use_refiner and self.high_noise_frac == 1.0
 
     @staticmethod
     def to_json(obj):
@@ -126,15 +128,17 @@ class SDXLConfig:
             disable_based_on_model(change.new)
             change_values_based_on_model(change.new)
         def disable_based_on_model(value): 
-                prompt_box[g(f'{self.negative_prompt=}')].disabled = True if self.__check_turbo(value) else False
-                prompt_box[g(f'{self.negative_prompt_2=}')].disabled = True if self.__check_turbo(value) else False
-                params_box[g(f'{self.high_noise_frac=}')].disabled = True if self.__check_turbo(value) else False
+                prompt_box[g(f'{self.negative_prompt=}')].disabled = True if self.__check_turbo__(value) else False
+                prompt_box[g(f'{self.negative_prompt_2=}')].disabled = True if self.__check_turbo__(value) else False
+                params_box[g(f'{self.high_noise_frac=}')].disabled = False if self.base_pipeline_type_str == "StableDiffusionXLPipeline" and not self.__check_turbo__(value) else True
         def change_values_based_on_model(value): 
-                params_box[g(f'{self.guidance_scale=}')].value = 0.0 if self.__check_turbo(value) else SDXLConfig().guidance_scale
-                params_box[g(f'{self.timestep_spacing=}')].value = "trailing" if self.__check_turbo(value) else SDXLConfig().timestep_spacing
-                params_box[g(f'{self.num_inference_steps=}')].value = 1 if self.__check_turbo(value) else SDXLConfig().num_inference_steps
-                params_box[g(f'{self.width=}')].value = 512 if self.__check_turbo(value) else SDXLConfig().width
-                params_box[g(f'{self.height=}')].value = 512 if self.__check_turbo(value) else SDXLConfig().height
+                params_box[g(f'{self.guidance_scale=}')].value = 0.0 if self.__check_turbo__(value) else SDXLConfig().guidance_scale
+                params_box[g(f'{self.timestep_spacing=}')].value = "trailing" if self.__check_turbo__(value) else SDXLConfig().timestep_spacing
+                params_box[g(f'{self.num_inference_steps=}')].value = 1 if self.__check_turbo__(value) else SDXLConfig().num_inference_steps
+                params_box[g(f'{self.width=}')].value = 512 if self.__check_turbo__(value) else SDXLConfig().width
+                params_box[g(f'{self.height=}')].value = 512 if self.__check_turbo__(value) else SDXLConfig().height
+                if self.__check_turbo__(value):
+                    params_box[g(f'{self.use_refiner=}')].value = False
         def on_base_pipe_dropdown_changed(change): 
             disable_based_on_pipe(change.new)
             change_values_based_on_pipe(change.new)
@@ -145,12 +149,12 @@ class SDXLConfig:
             params_box[g(f'{self.image_path=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
             params_box[g(f'{self.mask_path=}')].disabled = False if value == "StableDiffusionXLInpaintPipeline" else True
             params_box[g(f'{self.use_refiner=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
-            params_box[g(f'{self.high_noise_frac=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
+            params_box[g(f'{self.high_noise_frac=}')].disabled = False if value == "StableDiffusionXLPipeline" and not self.__check_turbo__(self.base_model) else True
         def change_values_based_on_pipe(value): 
             if value != "StableDiffusionXLPipeline":
                 params_box[g(f'{self.use_refiner=}')].value = False
                 params_box[g(f'{self.high_noise_frac=}')].value = 1.0
-            
+        
         prompt_key = g(f'{self.prompt=}')
         base_model_str_key = g(f'{self.base_model=}')
         base_pipeline_str_key = g(f'{self.base_pipeline_type_str=}')
@@ -175,8 +179,8 @@ class SDXLConfig:
             base_pipeline_str_key:widgets.Dropdown(value=self.base_pipeline_type_str, options=BASE_PIPELINES.keys(), description='Base type:', style=items_style, layout=items_layout),
             g(f'{self.refiner_pipeline_type_str=}'):widgets.Dropdown(value=self.refiner_pipeline_type_str, options=REFINER_PIPELINES.keys(), description='Refiner type:', style=items_style, layout=items_layout),
             g(f'{self.scheduler_type_str=}'):widgets.Dropdown(value=self.scheduler_type_str, options=SCHEDULERS.keys(), description='Scheduler type:', style=items_style, layout=items_layout),
-            g(f'{self.use_karras_sigmas=}'):widgets.Checkbox(value=self.use_karras_sigmas, description="Use karras sigmas", indent=False, style=items_style, layout=items_layout),
             g(f'{self.timestep_spacing=}'):widgets.Dropdown(value=self.timestep_spacing, options=SCHEDULER_TIMESTEP_SPACINGS, description='Scheduler timestep spacing:', style=items_style, layout=items_layout),
+            g(f'{self.use_karras_sigmas=}'):widgets.Checkbox(value=self.use_karras_sigmas, description="Use karras sigmas", indent=False, style=items_style, layout=items_layout),
             
             # inference properties
             g(f'{self.num_inference_steps=}'):widgets.IntSlider(value=self.num_inference_steps, min=1, max=100, step=1, description="Num inference steps:", continuous_update=False, style=items_style, layout=items_layout),
@@ -201,7 +205,7 @@ class SDXLConfig:
         # on base pipeline type changed
         disable_based_on_pipe(self.base_pipeline_type_str)
         params_box[base_pipeline_str_key].observe(on_base_pipe_dropdown_changed, names='value')
-        
+
         # layout
         boxes = prompt_box | params_box
         [interactive_output(f, {'x':x, 'name':fixed(name)}) for name,x in boxes.items()]
