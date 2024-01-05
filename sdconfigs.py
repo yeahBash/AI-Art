@@ -4,16 +4,17 @@ from ipywidgets import interactive_output, fixed, Layout
 import ipywidgets as widgets
 # for config
 import json
-from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLInpaintPipeline
+from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLInpaintPipeline, KandinskyV22CombinedPipeline
 from diffusers import EulerDiscreteScheduler, DDIMScheduler, LMSDiscreteScheduler, DPMSolverMultistepScheduler, DPMSolverSDEScheduler
 from PIL import Image
 from dataclasses import dataclass
 
-BASE_MODELS = ["stabilityai/stable-diffusion-xl-base-1.0", "stabilityai/sdxl-turbo"]
+BASE_MODELS = ["stabilityai/stable-diffusion-xl-base-1.0", "stabilityai/sdxl-turbo", "kandinsky-community/kandinsky-2-2-decoder"]
 REFINER_MODELS = ["stabilityai/stable-diffusion-xl-refiner-1.0"]
 BASE_PIPELINES = {"StableDiffusionXLPipeline":StableDiffusionXLPipeline,
                   "StableDiffusionXLImg2ImgPipeline":StableDiffusionXLImg2ImgPipeline,
-                  "StableDiffusionXLInpaintPipeline":StableDiffusionXLInpaintPipeline}
+                  "StableDiffusionXLInpaintPipeline":StableDiffusionXLInpaintPipeline,
+                  "KandinskyV22CombinedPipeline":KandinskyV22CombinedPipeline}
 REFINER_PIPELINES = {"StableDiffusionXLImg2ImgPipeline":StableDiffusionXLImg2ImgPipeline}
 SCHEDULERS = {"EulerDiscreteScheduler":EulerDiscreteScheduler, 
               "DDIMScheduler":DDIMScheduler, 
@@ -38,7 +39,7 @@ class SDXLConfig:
     base_pipeline_type_str: str = "StableDiffusionXLPipeline"
     refiner_pipeline_type_str: str = "StableDiffusionXLImg2ImgPipeline"
     scheduler_type_str: str = "LMSDiscreteScheduler"
-    use_karras_sigmas: bool = False
+    use_karras_sigmas: bool = True
     timestep_spacing: str = "linspace"
     variant: str = "fp16"
     use_safetensors: bool = True
@@ -75,7 +76,7 @@ class SDXLConfig:
     def kwargs(self): # choose additional arguments
         kwargs = {}
         match self.base_pipeline_type_str:
-            case "StableDiffusionXLPipeline":
+            case "StableDiffusionXLPipeline" | "KandinskyV22CombinedPipeline":
                 kwargs['width'] = self.width
                 kwargs['height'] = self.height
             case "StableDiffusionXLImg2ImgPipeline":
@@ -130,7 +131,7 @@ class SDXLConfig:
         def disable_based_on_model(value): 
                 prompt_box[g(f'{self.negative_prompt=}')].disabled = True if self.__check_turbo__(value) else False
                 prompt_box[g(f'{self.negative_prompt_2=}')].disabled = True if self.__check_turbo__(value) else False
-                params_box[g(f'{self.high_noise_frac=}')].disabled = False if self.base_pipeline_type_str == "StableDiffusionXLPipeline" and not self.__check_turbo__(value) else True
+                params_box[g(f'{self.high_noise_frac=}')].disabled = False if (self.base_pipeline_type_str == "StableDiffusionXLPipeline" or self.base_pipeline_type_str == "KandinskyV22CombinedPipeline") and not self.__check_turbo__(value) else True
         def change_values_based_on_model(value): 
                 params_box[g(f'{self.guidance_scale=}')].value = 0.0 if self.__check_turbo__(value) else SDXLConfig().guidance_scale
                 params_box[g(f'{self.timestep_spacing=}')].value = "trailing" if self.__check_turbo__(value) else SDXLConfig().timestep_spacing
@@ -145,13 +146,13 @@ class SDXLConfig:
         def disable_based_on_pipe(value): 
             params_box[g(f'{self.width=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
             params_box[g(f'{self.height=}')].disabled = False if value != "StableDiffusionXLImg2ImgPipeline" else True
-            params_box[g(f'{self.strength=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
-            params_box[g(f'{self.image_path=}')].disabled = False if value != "StableDiffusionXLPipeline" else True
+            params_box[g(f'{self.strength=}')].disabled = False if (value != "StableDiffusionXLPipeline" and value != "KandinskyV22CombinedPipeline") else True
+            params_box[g(f'{self.image_path=}')].disabled = False if (value != "StableDiffusionXLPipeline" and value != "KandinskyV22CombinedPipeline") else True
             params_box[g(f'{self.mask_path=}')].disabled = False if value == "StableDiffusionXLInpaintPipeline" else True
-            params_box[g(f'{self.use_refiner=}')].disabled = False if value == "StableDiffusionXLPipeline" else True
-            params_box[g(f'{self.high_noise_frac=}')].disabled = False if value == "StableDiffusionXLPipeline" and not self.__check_turbo__(self.base_model) else True
+            params_box[g(f'{self.use_refiner=}')].disabled = False if (value == "StableDiffusionXLPipeline"  or value == "KandinskyV22CombinedPipeline") else True
+            params_box[g(f'{self.high_noise_frac=}')].disabled = False if (value == "StableDiffusionXLPipeline" or value == "KandinskyV22CombinedPipeline") and not self.__check_turbo__(self.base_model) else True
         def change_values_based_on_pipe(value): 
-            if value != "StableDiffusionXLPipeline":
+            if value != "StableDiffusionXLPipeline" and value != "KandinskyV22CombinedPipeline":
                 params_box[g(f'{self.use_refiner=}')].value = False
                 params_box[g(f'{self.high_noise_frac=}')].value = 1.0
         
