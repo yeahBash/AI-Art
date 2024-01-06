@@ -75,7 +75,7 @@ class UIData:
     params_box: list[widgets.widget_core.CoreWidget] = None
 
 @dataclass
-class SDXLConfig:
+class DiffusionConfig:
     base_model: str = "stabilityai/stable-diffusion-xl-base-1.0"
     refiner_model: str = "stabilityai/stable-diffusion-xl-refiner-1.0"
     torch_dtype_str: str = "torch.float16"
@@ -152,7 +152,7 @@ class SDXLConfig:
 
     @staticmethod
     def to_json(obj):
-        if isinstance(obj, SDXLConfig):
+        if isinstance(obj, DiffusionConfig):
             return obj.__dict__
     @classmethod
     def from_json(cls, dict: dict):
@@ -160,12 +160,12 @@ class SDXLConfig:
     @staticmethod
     def load_config(configPath: str):
          with open(configPath, "r") as read_file:
-            return json.load(read_file, object_hook=SDXLConfig.from_json)  
+            return json.load(read_file, object_hook=DiffusionConfig.from_json)  
     def save_config(self, configPath: str):
          with open(configPath, "w") as write_file:
-            json.dump(self, write_file, skipkeys=True, indent=1, default=SDXLConfig.to_json)
+            json.dump(self, write_file, skipkeys=True, indent=1, default=DiffusionConfig.to_json)
     def model_params_equals(self, obj) -> bool: # TODO: refactor
-        if isinstance(obj, SDXLConfig):
+        if isinstance(obj, DiffusionConfig):
             return (self.base_model == obj.base_model and 
                     self.refiner_model == obj.refiner_model and 
                     self.torch_dtype_str == obj.torch_dtype_str and 
