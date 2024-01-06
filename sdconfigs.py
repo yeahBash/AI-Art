@@ -9,12 +9,15 @@ from diffusers import EulerDiscreteScheduler, DDIMScheduler, LMSDiscreteSchedule
 from PIL import Image
 from dataclasses import dataclass
 
-BASE_MODELS = ["stabilityai/stable-diffusion-xl-base-1.0", "stabilityai/sdxl-turbo", "kandinsky-community/kandinsky-2-2-decoder"]
+BASE_MODELS = ["stabilityai/stable-diffusion-xl-base-1.0", 
+               "stabilityai/sdxl-turbo", 
+               "kandinsky-community/kandinsky-2-2-decoder"]
 REFINER_MODELS = ["stabilityai/stable-diffusion-xl-refiner-1.0"]
-BASE_PIPELINES = {"StableDiffusionXLPipeline":StableDiffusionXLPipeline,
-                  "StableDiffusionXLImg2ImgPipeline":StableDiffusionXLImg2ImgPipeline,
-                  "StableDiffusionXLInpaintPipeline":StableDiffusionXLInpaintPipeline,
-                  "KandinskyV22CombinedPipeline":KandinskyV22CombinedPipeline}
+TXT2IMG_PIPELINES = {"StableDiffusionXLPipeline":StableDiffusionXLPipeline,
+                     "KandinskyV22CombinedPipeline":KandinskyV22CombinedPipeline}
+IMG2IMG_PIPELINES = {"StableDiffusionXLImg2ImgPipeline":StableDiffusionXLImg2ImgPipeline}
+INPAINTING_PIPELINES = {"StableDiffusionXLInpaintPipeline":StableDiffusionXLInpaintPipeline}
+BASE_PIPELINES = TXT2IMG_PIPELINES | IMG2IMG_PIPELINES | INPAINTING_PIPELINES
 REFINER_PIPELINES = {"StableDiffusionXLImg2ImgPipeline":StableDiffusionXLImg2ImgPipeline}
 SCHEDULERS = {"EulerDiscreteScheduler":EulerDiscreteScheduler, 
               "DDIMScheduler":DDIMScheduler, 
@@ -67,27 +70,45 @@ class SDXLConfig:
     @property
     def refiner_pipeline_type(self):return REFINER_PIPELINES[self.refiner_pipeline_type_str]
     @property
+    def prompt_arg(self) -> str:return self.prompt if self.prompt != "" and not self.use_compel else None
+    @property
+    def prompt_2_arg(self) -> str:return self.prompt_2 if self.prompt_2 != "" and not self.use_compel else None
+    @property
+    def negative_prompt_arg(self) -> str:return self.negative_prompt if self.negative_prompt != "" and not self.use_compel else None
+    @property
+    def negative_prompt_2_arg(self) -> str:return self.negative_prompt_2 if self.negative_prompt_2 != "" and not self.use_compel else None
+    @property
     def scheduler_type(self):return SCHEDULERS[self.scheduler_type_str]
     @property
     def image(self):return Image.open(self.image_path) if self.base_pipeline_type == StableDiffusionXLImg2ImgPipeline or self.base_pipeline_type == StableDiffusionXLInpaintPipeline else None
     @property
     def mask(self):return Image.open(self.mask_path) if self.base_pipeline_type == StableDiffusionXLInpaintPipeline else None
     @property
-    def kwargs(self): # choose additional arguments
+    def model_kwargs(self): # choose additional arguments for models
         kwargs = {}
-        match self.base_pipeline_type_str:
-            case "StableDiffusionXLPipeline" | "KandinskyV22CombinedPipeline":
-                kwargs['width'] = self.width
-                kwargs['height'] = self.height
-            case "StableDiffusionXLImg2ImgPipeline":
-                kwargs['image'] = self.image
-                kwargs['strength'] = self.strength
-            case "StableDiffusionXLInpaintPipeline":
-                kwargs['width'] = self.width
-                kwargs['height'] = self.height
-                kwargs['image'] = self.image
-                kwargs['strength'] = self.strength
-                kwargs['mask_image'] = self.mask
+        if self.base_pipeline_type_str != "KandinskyV22CombinedPipeline":
+            kwargs['variant'] = self.variant
+        return kwargs
+    @property
+    def pipe_kwargs(self): # choose additional arguments for pipelines
+        kwargs = {}
+        if self.base_pipeline_type_str != "KandinskyV22CombinedPipeline":
+            kwargs['prompt_2'] = self.prompt_2_arg
+            kwargs['negative_prompt_2'] = self.negative_prompt_2_arg
+            kwargs['denoising_end'] = self.high_noise_frac
+        
+        if self.base_pipeline_type_str in TXT2IMG_PIPELINES:
+            kwargs['width'] = self.width
+            kwargs['height'] = self.height
+        elif self.base_pipeline_type_str in IMG2IMG_PIPELINES:
+            kwargs['image'] = self.image
+            kwargs['strength'] = self.strength
+        elif self.base_pipeline_type_str in INPAINTING_PIPELINES:
+            kwargs['width'] = self.width
+            kwargs['height'] = self.height
+            kwargs['image'] = self.image
+            kwargs['strength'] = self.strength
+            kwargs['mask_image'] = self.mask
         return kwargs
     
     @property
