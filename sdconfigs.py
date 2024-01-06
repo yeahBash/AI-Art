@@ -26,7 +26,7 @@ BASE_MODELS = {"stabilityai/stable-diffusion-xl-base-1.0":
                                                exclude_ui=[],
                                                change_ui_values={"guidance_scale":7.5,"timestep_spacing":"linspace",
                                                                  "num_inference_steps":40,"width":768,"height":768}), 
-               "stabilityai/sdxl-turbo":
+               "stabilityai/sdxl-turbo": # TODO: For SDXLTurboImg2Img make sure that num_inference_steps * strength is larger or equal to 1 since int(num_inference_steps * strength) = number of steps
                                         Params(kwargs=['variant'], 
                                                exclude_ui=["negative_prompt","negative_prompt_2","high_noise_frac",
                                                            "guidance_scale","timestep_spacing"],
