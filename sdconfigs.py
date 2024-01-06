@@ -21,33 +21,43 @@ class PipelineWrapper:
     type: DiffusionPipeline
     params: Params
 
-BASE_MODELS = {"stabilityai/stable-diffusion-xl-base-1.0":Params(kwargs=['variant'],
-                                                                   change_ui_values={"guidance_scale":7.5,"timestep_spacing":"linspace","num_inference_steps":40,
-                                                                                     "width":768,"height":768}), 
-               "stabilityai/sdxl-turbo":Params(kwargs=['variant'], exclude_ui=["negative_prompt","negative_prompt_2",
-                                                                               "high_noise_frac","guidance_scale","timestep_spacing"],
-                                                                   change_ui_values={"guidance_scale":0.0,"timestep_spacing":"trailing","num_inference_steps":1,
-                                                                                     "high_noise_frac":1.0,"width":512,"height":512,"use_refiner":False}), 
-               "kandinsky-community/kandinsky-2-2-decoder":Params(exclude_ui=["prompt_2","negative_prompt_2","high_noise_frac","use_compel"],
-                                                                   change_ui_values={"guidance_scale":7.5,"timestep_spacing":"linspace","num_inference_steps":40,
-                                                                                     "width":512,"height":512, "use_compel":False})}
-REFINER_MODELS = ["stabilityai/stable-diffusion-xl-refiner-1.0"]
-TXT2IMG_PIPELINES = {"StableDiffusionXLPipeline":PipelineWrapper(StableDiffusionXLPipeline, 
-                                                                 Params(kwargs=['prompt_2','negative_prompt_2','denoising_end',
-                                                                                'width','height','image','strength','mask_image'],
-                                                                        exclude_ui=["image_path","strength","mask_path"])),
-                     "KandinskyV22CombinedPipeline":PipelineWrapper(KandinskyV22CombinedPipeline, 
-                                                                    Params(kwargs=['width','height'],
-                                                                           exclude_ui=["image_path","strength","mask_path"]))}
-IMG2IMG_PIPELINES = {"StableDiffusionXLImg2ImgPipeline":PipelineWrapper(StableDiffusionXLImg2ImgPipeline, 
-                                                                        Params(kwargs=['prompt_2','negative_prompt_2','denoising_end',
-                                                                                       'image','strength'],
-                                                                               exclude_ui=["width","height","mask_path"]))}
-INPAINTING_PIPELINES = {"StableDiffusionXLInpaintPipeline":PipelineWrapper(StableDiffusionXLInpaintPipeline, 
-                                                                           Params(kwargs=['prompt_2','negative_prompt_2','denoising_end',
-                                                                                          'width','height','image','strength','mask_image']))}
+BASE_MODELS = {"stabilityai/stable-diffusion-xl-base-1.0":
+                                        Params(kwargs=['variant'],
+                                               exclude_ui=[],
+                                               change_ui_values={"guidance_scale":7.5,"timestep_spacing":"linspace",
+                                                                 "num_inference_steps":40,"width":768,"height":768}), 
+               "stabilityai/sdxl-turbo":
+                                        Params(kwargs=['variant'], 
+                                               exclude_ui=["negative_prompt","negative_prompt_2","high_noise_frac",
+                                                           "guidance_scale","timestep_spacing"],
+                                               change_ui_values={"guidance_scale":0.0,"timestep_spacing":"trailing","num_inference_steps":1,
+                                                                 "high_noise_frac":1.0,"width":512,"height":512,"use_refiner":False}), 
+               "kandinsky-community/kandinsky-2-2-decoder":
+                                        Params(kwargs=[],
+                                               exclude_ui=["prompt_2","negative_prompt_2","high_noise_frac","use_compel"],
+                                               change_ui_values={"guidance_scale":7.5,"timestep_spacing":"linspace","num_inference_steps":40,
+                                                                 "width":512,"height":512, "use_compel":False})}
+TXT2IMG_PIPELINES = {"StableDiffusionXLPipeline":
+                        PipelineWrapper(StableDiffusionXLPipeline, 
+                                        Params(kwargs=['prompt_2','negative_prompt_2','denoising_end',
+                                                       'width','height','image','strength','mask_image'],
+                                               exclude_ui=["image_path","strength","mask_path"])),
+                     "KandinskyV22CombinedPipeline":
+                        PipelineWrapper(KandinskyV22CombinedPipeline, 
+                                        Params(kwargs=['width','height'],
+                                               exclude_ui=["image_path","strength","mask_path"]))}
+IMG2IMG_PIPELINES = {"StableDiffusionXLImg2ImgPipeline":
+                        PipelineWrapper(StableDiffusionXLImg2ImgPipeline, 
+                                        Params(kwargs=['prompt_2','negative_prompt_2','denoising_end',
+                                                       'image','strength'],
+                                               exclude_ui=["width","height","mask_path"]))}
+INPAINTING_PIPELINES = {"StableDiffusionXLInpaintPipeline":
+                        PipelineWrapper(StableDiffusionXLInpaintPipeline, 
+                                        Params(kwargs=['prompt_2','negative_prompt_2','denoising_end',
+                                                       'width','height','image','strength','mask_image']))}
 
 BASE_PIPELINES = TXT2IMG_PIPELINES | IMG2IMG_PIPELINES | INPAINTING_PIPELINES
+REFINER_MODELS = ["stabilityai/stable-diffusion-xl-refiner-1.0"]
 REFINER_PIPELINES = {"StableDiffusionXLImg2ImgPipeline":StableDiffusionXLImg2ImgPipeline}
 SCHEDULERS = {"EulerDiscreteScheduler":EulerDiscreteScheduler, 
               "DDIMScheduler":DDIMScheduler, 
