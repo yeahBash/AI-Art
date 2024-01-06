@@ -70,6 +70,13 @@ class SDXLCompelHelper:
                 base_negative_prompt_embeds = torch.cat((base_negative_prompt_embeds_1, base_negative_prompt_embeds_2), dim=-1)
         
         return (base_positive_prompt_embeds, base_positive_prompt_pooled, base_negative_prompt_embeds, base_negative_prompt_pooled)
-
-
-
+    
+    def get_embeds_args(self, prompt, prompt_2, negative_prompt, negative_prompt_2) -> dict[str, torch.Tensor]:
+        (base_positive_prompt_embeds, base_positive_prompt_pooled, base_negative_prompt_embeds, base_negative_prompt_pooled) = self.get_embeddings(prompt, prompt_2, negative_prompt, negative_prompt_2)
+        # set embeds dict
+        embeds_args = {}
+        embeds_args['prompt_embeds'] = base_positive_prompt_embeds
+        embeds_args['pooled_prompt_embeds'] = base_positive_prompt_pooled
+        embeds_args['negative_prompt_embeds'] = base_negative_prompt_embeds
+        embeds_args['negative_pooled_prompt_embeds'] = base_negative_prompt_pooled
+        return embeds_args
